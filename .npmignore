@@ -1,0 +1,11 @@
+src/
+.ai/
+.claude/
+.github/
+tsconfig.json
+*.ts
+!dist/**/*.js
+*.map
+.DS_Store
+*.log
+node_modules/

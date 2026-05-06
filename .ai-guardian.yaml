@@ -1,0 +1,10 @@
+# ai-guardian project configuration
+# Global settings (~/.ai-guardian/config.yaml) are used as defaults.
+# Only override what differs for this project.
+
+project:
+  name: ""
+  stack: ""
+
+# Project-specific watch rules (appended to global rules)
+rules: []

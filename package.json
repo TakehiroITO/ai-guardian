@@ -1,0 +1,52 @@
+{
+  "name": "@mohican/ai-guardian",
+  "version": "0.1.1",
+  "description": "AI coding support CLI tool - context management, file watching, and multi-agent review",
+  "main": "dist/cli.js",
+  "bin": {
+    "ai-guardian": "dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "templates/"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "ts-node src/cli.ts",
+    "start": "node dist/cli.js"
+  },
+  "keywords": [
+    "ai",
+    "coding",
+    "cli",
+    "review",
+    "context-management",
+    "ai-guardian",
+    "hooks",
+    "skills",
+    "agents",
+    "rules"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.0",
+    "chokidar": "^3.6.0",
+    "commander": "^12.1.0",
+    "js-yaml": "^4.1.0",
+    "minimatch": "^10.2.5",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/minimatch": "^5.1.2",
+    "@types/node": "^20.14.0",
+    "@types/uuid": "^9.0.8",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.5"
+  }
+}
