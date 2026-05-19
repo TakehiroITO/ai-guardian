@@ -8,3 +8,10 @@ project:
 
 # Project-specific watch rules (appended to global rules)
 rules: []
+
+# Session lifecycle tracking (crash detection + re-entry diagnostics)
+session:
+  enabled: true
+  log_file: .ai/.session.log
+  # verify_command: ""        # auto-detected from project (npm run build / cargo build / go build) if blank
+  check_on_start: true

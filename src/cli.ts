@@ -11,6 +11,7 @@ import { contextCommand } from './commands/context-cmd';
 import { rulesCommand } from './commands/rules-cmd';
 import { syncCommand } from './commands/sync';
 import { setupCommand } from './commands/setup';
+import { sessionCommand } from './commands/session';
 import { setLogLevel } from './utils/logger';
 
 const program = new Command();
@@ -18,7 +19,7 @@ const program = new Command();
 program
   .name('ai-guardian')
   .description('AI coding support CLI - context management, file watching, and multi-agent review')
-  .version('0.1.0')
+  .version('0.2.0')
   .option('--debug', 'Enable debug logging')
   .hook('preAction', (thisCommand) => {
     if (thisCommand.opts().debug) {
@@ -126,6 +127,25 @@ program
   .option('--file <file>', 'Target file for rules test')
   .action(async (subcommand: string, options) => {
     await rulesCommand(subcommand, options);
+  });
+
+// ai-guardian session <subcommand>
+program
+  .command('session <subcommand>')
+  .description('Session/task lifecycle (start / complete / check / status)')
+  .option('--task <description>', 'Task description (with start)')
+  .option('--type <type>', 'Filter for complete (session / task)')
+  .option('--json', 'Output JSON')
+  .option('--skip-verify', 'Skip verify command in check')
+  .option('--skip-sync', 'Skip context sync in check')
+  .action(async (subcommand: string, options) => {
+    await sessionCommand(subcommand, {
+      task: options.task,
+      type: options.type,
+      json: options.json,
+      skipVerify: options.skipVerify,
+      skipSync: options.skipSync,
+    });
   });
 
 // ai-guardian sync

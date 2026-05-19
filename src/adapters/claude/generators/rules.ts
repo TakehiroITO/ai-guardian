@@ -44,18 +44,25 @@ ${stackDesc ? `技術スタック: ${stackDesc}` : ''}
 
 ## セッション開始時
 
-まず \`ai-guardian context sync\` を実行してコンテキストを同期し、以下のファイルを読み込む:
+SessionStart フックで \`ai-guardian session check\` が自動実行され、次の情報が表示される:
+- 前回セッションの未完了タスク（あればクラッシュ疑い警告）
+- \`git status\` の差分
+- verify コマンド（ビルド等）の成否
+- \`.ai/CURRENT_CONTEXT.md\` の内容
 
-1. \`.ai/CURRENT_CONTEXT.md\` → 今どこにいるか・次にやること
-2. \`.ai/ARCHITECTURE.md\` → ディレクトリ構造・設定スキーマ・IF仕様
-3. \`.ai/REQUIREMENTS.md\` → 機能要件・非機能要件
+その結果を読み、以下を実行する:
+
+1. クラッシュ疑い警告があればコードの破損状況を確認し、ユーザーに報告
+2. \`.ai/CURRENT_CONTEXT.md\` / \`.ai/ARCHITECTURE.md\` / \`.ai/REQUIREMENTS.md\` を読み込む
+3. 現在の状況と次にやることをユーザーに報告し、次の指示を伺う
 
 ## 作業ルール
 
 1. 実装前に \`.ai/ARCHITECTURE.md\` の構成に従う
 2. 設計上の判断をした場合は \`.ai/DECISIONS.md\` に追記する
-3. 各タスク完了後に \`.ai/CURRENT_CONTEXT.md\` を更新する
-4. セッション終了時に次のセッションで再開できる状態に \`.ai/CURRENT_CONTEXT.md\` を整える
+3. **タスク着手時に** \`ai-guardian session start --task "<概要>"\` を実行する
+4. **タスク完了時に** \`ai-guardian session complete\` を実行し、続けて \`.ai/CURRENT_CONTEXT.md\` を更新する
+5. セッション終了時に次のセッションで再開できる状態に \`.ai/CURRENT_CONTEXT.md\` を整える（SessionEnd フックがセッション自体は自動完了する）
 
 ## PLANモードで止まる条件
 
@@ -83,6 +90,10 @@ ai-guardian context sync                    # コンテキスト同期
 ai-guardian context diff                    # 変更差分
 ai-guardian review --target <file> --type <type>  # レビュー
 ai-guardian sync --agent claude             # Claude連携ファイル再生成
+ai-guardian session start --task "<text>"   # タスク開始記録
+ai-guardian session complete                # タスク/セッション完了記録
+ai-guardian session check                   # 再開時診断（クラッシュ検出+verify）
+ai-guardian session status                  # 未完了エントリ確認
 \`\`\`
 
 ## ルール

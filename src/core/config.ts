@@ -83,12 +83,20 @@ export interface ResponseStyleConfig {
   prompt_file: string;
 }
 
+export interface SessionConfig {
+  enabled: boolean;
+  log_file: string;
+  verify_command: string;
+  check_on_start: boolean;
+}
+
 export interface GuardianConfig {
   api: {
     anthropic_api_key: string;
     model: string;
   };
   response_style: ResponseStyleConfig;
+  session?: SessionConfig;
   watch: {
     timeout_minutes: number;
     debounce_ms: number;
@@ -122,6 +130,12 @@ const DEFAULT_CONFIG: GuardianConfig = {
   response_style: {
     enabled: true,
     prompt_file: '~/.ai-guardian/prompts/response-style.md',
+  },
+  session: {
+    enabled: true,
+    log_file: '.ai/.session.log',
+    verify_command: '',
+    check_on_start: true,
   },
   watch: {
     timeout_minutes: 120,

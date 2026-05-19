@@ -12,9 +12,32 @@ interface ClaudeHook {
 export function generateHooksConfig(config: GuardianConfig, _projectDir: string): Record<string, ClaudeHook[]> {
   const claudeHooks: Record<string, ClaudeHook[]> = {};
 
-  // NOTE: Session start sync is handled via CLAUDE.md instructions
-  // (PreSession is not a valid Claude Code hook event)
-  // See generateClaudeMd() in rules.ts for the instruction approach
+  // Session lifecycle hooks (LLM-independent session tracking)
+  const sessionEnabled = config.session?.enabled !== false;
+  if (sessionEnabled) {
+    claudeHooks['SessionStart'] = [
+      {
+        type: 'command',
+        hooks: [
+          {
+            command: 'ai-guardian session check',
+            description: 'Run session diagnostics (crash detection + context sync + verify)',
+          },
+        ],
+      },
+    ];
+    claudeHooks['SessionEnd'] = [
+      {
+        type: 'command',
+        hooks: [
+          {
+            command: 'ai-guardian session complete --type session',
+            description: 'Mark the current session as completed cleanly',
+          },
+        ],
+      },
+    ];
+  }
 
   // Generate hooks from ai-guardian hook configs
   const guardianHooks = config.hooks || [];

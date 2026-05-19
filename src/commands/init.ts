@@ -23,6 +23,20 @@ function writeIfNeeded(filePath: string, content: string, force: boolean): boole
   return true;
 }
 
+const GITIGNORE_ENTRIES = ['.ai/.session.log'];
+
+function ensureGitignoreEntries(projectDir: string): boolean {
+  const gitignorePath = path.join(projectDir, '.gitignore');
+  const existing = fs.existsSync(gitignorePath) ? fs.readFileSync(gitignorePath, 'utf-8') : '';
+  const existingLines = new Set(existing.split('\n').map((l) => l.trim()));
+  const missing = GITIGNORE_ENTRIES.filter((e) => !existingLines.has(e));
+  if (missing.length === 0) return false;
+  const prefix = existing && !existing.endsWith('\n') ? '\n' : '';
+  const append = prefix + missing.join('\n') + '\n';
+  fs.writeFileSync(gitignorePath, existing + append, 'utf-8');
+  return true;
+}
+
 export async function initCommand(options: { force?: boolean; agent?: string }): Promise<void> {
   const projectDir = process.cwd();
 
@@ -82,6 +96,11 @@ export async function initCommand(options: { force?: boolean; agent?: string }):
       logger.info(`Created: ${file.dest}`);
       created++;
     }
+  }
+
+  // Update .gitignore so session log and other generated artifacts are ignored
+  if (ensureGitignoreEntries(projectDir)) {
+    logger.info('Updated: .gitignore (added .ai/.session.log)');
   }
 
   if (created > 0) {

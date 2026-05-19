@@ -1,11 +1,69 @@
 # CURRENT_CONTEXT.md
 
-更新日時: 2026-04-28
+更新日時: 2026-05-19
 
 ## 今何をしているか
 
-v0.1.0 を npm に公開済み (`@mohican/ai-guardian`)。
-Phase 2 全体（2a/2b/2c/2d）の実装・テスト・README・CLAUDE.md 整備が完了。
+v0.2.0 の機能追加（session 機能）をローカル実装完了。**未公開・未プッシュ**。
+
+### v0.2.0 で追加した内容
+- `ai-guardian session start/complete/check/status` の4サブコマンド
+- `.ai/.session.log` (JSONL) によるセッション/タスク追跡
+- `session check` でクラッシュ検出 + git status + verify_command + context sync を実行
+- verify_command 自動検出: `package.json` scripts.build → cargo → go
+- Claude アダプタ: SessionStart hook で `session check`、SessionEnd hook で `session complete --type session`
+- CLAUDE.md テンプレ: タスク着手/完了時に `session start --task` / `session complete` を呼ぶ指示を追加
+- `.ai-guardian.yaml` テンプレに `session:` セクション追加
+- init 実行時にユーザの `.gitignore` へ `.ai/.session.log` を追記
+- tests/session.test.ts (13テスト追加) — 全72テストグリーン
+
+### 次回セッション最初にやること
+1. **v0.1.1 の積み残し**: GitHub プッシュ完了 + npm トークン revoke/再発行（前回の課題）
+2. v0.2.0 の動作確認（実プロジェクトで `init` → `sync --agent claude` → Claude Code 起動で SessionStart/SessionEnd hook が動くか）
+3. v0.2.0 を npm 公開 + GitHub プッシュ
+
+## v0.1.1 積み残し（v0.2.0 公開前に解消必要）
+
+GitHub Push Protection で初回プッシュ失敗:
+1. `git rm --cached .claude/settings.local.json` 済み（status上 `D` 表示）
+2. `.gitignore` に `.claude/settings.local.json` 追加済み
+3. **未完了**: シークレットを含むコミットを修正してプッシュ
+4. **未完了**: 漏洩した旧 npm トークンを revoke して再発行
+
+## プッシュ未完了の理由と次のアクション
+
+`.claude/settings.local.json` にnpmトークンが含まれた状態でコミットしたため、
+GitHub Push Protection にブロックされた。
+
+### 途中まで完了した作業:
+1. `git rm --cached .claude/settings.local.json` 済み
+2. `.gitignore` に `.claude/settings.local.json` を追加済み
+
+### 次回セッションで最初にやること:
+1. `.gitignore` の変更とsettings.local.json除去をコミットし直す
+   ```bash
+   git add .gitignore
+   git commit --amend  # シークレットを含むコミットを修正
+   git push -u origin main
+   ```
+2. プッシュが成功することを確認
+3. npm トークン（漏洩した旧トークン）は npm Web で **revoke して再発行** することを推奨
+
+## v0.1.1 での変更内容
+
+1. **PreSession フック削除** (`src/adapters/claude/generators/hooks.ts`)
+   - `PreSession` は Claude Code の有効なフックイベントではなかった
+   - 代わりに CLAUDE.md の指示でセッション開始時に `ai-guardian context sync` を実行する方式に変更
+
+2. **CLAUDE.md テンプレート更新** (`src/adapters/claude/generators/rules.ts`)
+   - 「セッション開始時に必ず読み込むファイル」→「セッション開始時」に変更
+   - `ai-guardian context sync` 実行の指示を追加
+
+3. **settings.local.json マージ対応** (`src/adapters/claude/index.ts`)
+   - sync 時に settings.local.json を全上書きしていたバグを修正
+   - 既存の permissions 等を保持し、hooks のみ更新するように変更
+
+4. **バージョン** `0.1.0` → `0.1.1`
 
 ## 完了していること
 
@@ -16,72 +74,34 @@ Phase 2 全体（2a/2b/2c/2d）の実装・テスト・README・CLAUDE.md 整備
 - 技術スタック決定（Node.js/TypeScript/npm）
 - デーモン管理方針（PID/タイムアウト/通知）
 - 設定継承モデル（グローバル/プロジェクト）
-- **src/utils/logger.ts** - ログ出力ユーティリティ
-- **src/utils/pid.ts** - PIDファイル管理
-- **src/core/config.ts** - 設定読み込みと継承処理
-- **src/core/context.ts** - .ai/ファイル群の読み書き
-- **src/commands/init.ts** - `ai-guardian init`
-- **templates/** - initコマンド用テンプレートファイル群
-- **src/commands/watch.ts** - `ai-guardian watch start/stop/status`
-- **src/notifications/macos.ts** - macOS通知
-- **src/notifications/slack.ts** - Slack Webhook送信
-- **src/commands/notify.ts** - `ai-guardian notify`
-- **src/core/reviewer.ts** - ローカルレビュー実行（Anthropic API）
-- **src/core/conductor.ts** - ai-conductor RESTクライアント
-- **src/commands/review.ts** - `ai-guardian review`
-- **src/cli.ts** - エントリポイント
+- 全コアモジュール・コマンド実装
 - ビルド成功・CLI基本動作確認済み
 
-### フェーズ2: 設計見直し（2026-04-17完了）
+### フェーズ2: 設計見直し〜Phase 2c（2026-04-23完了）
 - Claude Code Skills/Hooks/Agents の機能調査
-- LLM非依存コア + LLM別アダプタ方式の決定（DECISIONS.md記録済み）
-- ARCHITECTURE.md 更新
-- REQUIREMENTS.md 更新
-
-### Phase 2a: 基盤層（2026-04-23完了）
-- **src/utils/frontmatter.ts** - Markdownフロントマター解析（自前実装）
-- **src/utils/glob-matcher.ts** - globパターンマッチング（minimatch）
-- **src/core/template-engine.ts** - テンプレート展開エンジン（!`cmd`! / @path / {{var}}）
-- **src/providers/provider.ts** - LLMProvider共通インターフェース + ファクトリ
-- **src/providers/anthropic.ts** - Anthropicプロバイダ
-- **src/providers/openai.ts** - OpenAIプロバイダ
-- **src/providers/gemini.ts** - Geminiプロバイダ
-- **src/core/config.ts** 拡張 - HookConfig, AdaptersConfig, ContextConfig追加
-- **src/core/reviewer.ts** リファクタ - Provider経由に変更（後方互換維持）
-
-### Phase 2b: コア機能（2026-04-23完了）
-- **src/core/hooks.ts** - HooksEngine（イベントマッチ・アクション実行・throttle・状態管理・compose）
-- **src/core/rules.ts** - ルールローダー（Global/Project、パスマッチ、バリデーション）
-- **src/commands/watch.ts** リファクタ - HooksEngine経由に変更
-- **src/commands/rules-cmd.ts** - `ai-guardian rules list/test/validate`
-- **src/core/skills.ts** - Skillsローダー・テンプレート展開
-- **src/commands/skill.ts** - `ai-guardian skill <name> / --list`
-- **src/core/agents.ts** - Agents定義・LLM呼び出し・コンテキスト収集
-- **src/commands/agent.ts** - `ai-guardian agent <name> / --list`
-- **src/core/context.ts** 拡張 - syncContext, diffContext, snapshotContext
-- **src/commands/context-cmd.ts** - `ai-guardian context sync/diff/snapshot/compress`
-- **src/cli.ts** 更新 - 5新コマンド登録（skill/agent/context/rules/sync）
-
-### Phase 2c: アダプタ層（2026-04-23完了）
-- **src/adapters/adapter.ts** - LLMAdapter共通インターフェース + ファクトリ
-- **src/adapters/claude/generators/hooks.ts** - Claude Code hooks生成
-- **src/adapters/claude/generators/skills.ts** - Claude Code skills生成
-- **src/adapters/claude/generators/agents.ts** - Claude Code agents生成
-- **src/adapters/claude/generators/rules.ts** - Claude Code rules生成
-- **src/adapters/claude/index.ts** - ClaudeAdapter（detect/generate/sync）
-- **src/commands/init.ts** 更新 - --agentオプション追加
-- **src/commands/sync.ts** - `ai-guardian sync [--agent <llm>]`
-- テンプレートファイル追加（skills/agents/rules）
+- LLM非依存コア + LLM別アダプタ方式
+- 基盤層・コア機能・アダプタ層の実装
 
 ### 応答様態チューニング機能（2026-05-02完了）
-- **src/core/response-style.ts** - 応答様態プロンプトの読み込み・注入
-- **prompts/response-style.md** - デフォルトの応答様態プロンプト（確信度別表現・冷静評価・根拠提示）
-- **src/core/config.ts** 拡張 - `response_style` 設定（enabled/prompt_file）
-- **src/core/reviewer.ts** 更新 - レビュー時にresponse styleを注入
-- **src/core/agents.ts** 更新 - エージェント実行時にresponse styleを注入
-- **tests/response-style.test.ts** - 5テスト追加（合計59テスト）
+- response-style プロンプト注入機能
+
+### v0.1.1 バグフィックス（2026-05-07完了）
+- PreSession フック削除・CLAUDE.md指示方式へ変更
+- settings.local.json マージ対応
+- npm 公開済み、GitHub プッシュ未完了
+
+### v0.2.0 session 機能（2026-05-19ローカル完了）
+- session start/complete/check/status コマンド実装
+- クラッシュ検出 (`*_start` に対応する `*_complete` なし) で警告
+- Claude SessionStart/SessionEnd hook 自動生成
+- CLAUDE.md テンプレ更新
+- 全72テストグリーン、ビルド成功
 
 ## 次にやること
+
+### 即時（次回セッション冒頭）
+- GitHub へのプッシュ完了
+- npm トークンの revoke と再発行
 
 ### Phase 2d: 強化機能の実装（後回し可）
 - hooks の複合トリガー・状態管理の高度化
@@ -90,14 +110,9 @@ Phase 2 全体（2a/2b/2c/2d）の実装・テスト・README・CLAUDE.md 整備
 - rules のプログラム検証（pattern/command型）・矛盾検出
 - context の compress（LLMによる要約）
 
-### テスト・品質
-- ユニットテスト追加（vitest検討）
-- npmパッケージとしてのインストールテスト
-- 実プロジェクトでの統合テスト
-
 ### その他
 - Cursor/Copilotアダプタの実装
-- README.md作成
+- ChatGPT/Gemini アダプタでもセッション開始時指示を統一
 
 ## 未解決の問題・判断待ち
 
