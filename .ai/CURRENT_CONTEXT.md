@@ -4,7 +4,11 @@
 
 ## 今何をしているか
 
-v0.2.0 の機能追加（session 機能）をローカル実装完了。**未公開・未プッシュ**。
+v0.2.0 (session 機能) を GitHub にプッシュ完了（2026-05-20）。
+v0.1.1 のシークレット除去 amend → v0.2.0 commit → push -u origin main すべて成功。
+GitHub: https://github.com/TakehiroITO/ai-guardian
+
+**次の作業**: 漏洩した旧 npm トークンの revoke + v0.2.0 の npm 公開。
 
 ### v0.2.0 で追加した内容
 - `ai-guardian session start/complete/check/status` の4サブコマンド
@@ -18,9 +22,9 @@ v0.2.0 の機能追加（session 機能）をローカル実装完了。**未公
 - tests/session.test.ts (13テスト追加) — 全72テストグリーン
 
 ### 次回セッション最初にやること
-1. **v0.1.1 の積み残し**: GitHub プッシュ完了 + npm トークン revoke/再発行（前回の課題）
-2. v0.2.0 の動作確認（実プロジェクトで `init` → `sync --agent claude` → Claude Code 起動で SessionStart/SessionEnd hook が動くか）
-3. v0.2.0 を npm 公開 + GitHub プッシュ
+1. 漏洩した旧 npm トークンの revoke + 新トークン発行（**ユーザ作業**: https://www.npmjs.com/）
+2. 新トークンで v0.2.0 を npm 公開
+3. v0.2.0 の動作確認（実プロジェクトで `init` → `sync --agent claude` → Claude Code 起動で SessionStart/SessionEnd hook が動くか）
 
 ## v0.1.1 積み残し（v0.2.0 公開前に解消必要）
 
