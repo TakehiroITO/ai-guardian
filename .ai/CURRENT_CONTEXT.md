@@ -1,131 +1,103 @@
 # CURRENT_CONTEXT.md
 
-更新日時: 2026-05-19
+更新日時: 2026-05-26
 
 ## 今何をしているか
 
-v0.2.0 (session 機能) を GitHub にプッシュ完了（2026-05-20）。
-v0.1.1 のシークレット除去 amend → v0.2.0 commit → push -u origin main すべて成功。
-GitHub: https://github.com/TakehiroITO/ai-guardian
+v0.2.0 (session 機能) を npm に公開完了 + GitHub プッシュ完了。
+- npm: `@mohican/ai-guardian@0.2.0` (latest) — 2026-05-26 公開
+- GitHub: https://github.com/TakehiroITO/ai-guardian (`3d9a882` が最新)
+- 全72テストグリーン、ビルド成功
 
-**次の作業**: 漏洩した旧 npm トークンの revoke + v0.2.0 の npm 公開。
+トークン漏洩リスクも全て解消済み（後述）。
 
-### v0.2.0 で追加した内容
-- `ai-guardian session start/complete/check/status` の4サブコマンド
-- `.ai/.session.log` (JSONL) によるセッション/タスク追跡
-- `session check` でクラッシュ検出 + git status + verify_command + context sync を実行
-- verify_command 自動検出: `package.json` scripts.build → cargo → go
-- Claude アダプタ: SessionStart hook で `session check`、SessionEnd hook で `session complete --type session`
-- CLAUDE.md テンプレ: タスク着手/完了時に `session start --task` / `session complete` を呼ぶ指示を追加
-- `.ai-guardian.yaml` テンプレに `session:` セクション追加
-- init 実行時にユーザの `.gitignore` へ `.ai/.session.log` を追記
-- tests/session.test.ts (13テスト追加) — 全72テストグリーン
+## 次回セッションで最初にやること
 
-### 次回セッション最初にやること
-1. 漏洩した旧 npm トークンの revoke + 新トークン発行（**ユーザ作業**: https://www.npmjs.com/）
-2. 新トークンで v0.2.0 を npm 公開
-3. v0.2.0 の動作確認（実プロジェクトで `init` → `sync --agent claude` → Claude Code 起動で SessionStart/SessionEnd hook が動くか）
+1. **Trusted Publishing への移行**（このセッションで合意済み、次回着手）
+   - `.github/workflows/publish.yml` 作成（タグ push → npm publish with provenance）
+   - npmjs.com の package settings で `TakehiroITO/ai-guardian` の `publish.yml` を Trusted Publisher として登録
+   - README に「リリース手順: `npm version <patch|minor|major>` → `git push --follow-tags`」追記
+   - 以後 publish に長期トークン不要 → 今回のような事故が構造的に起こらなくなる
 
-## v0.1.1 積み残し（v0.2.0 公開前に解消必要）
+2. v0.2.0 の動作確認（別プロジェクトで `init` → `sync --agent claude` → Claude Code 起動で SessionStart/SessionEnd hook が実際に走るか）
 
-GitHub Push Protection で初回プッシュ失敗:
-1. `git rm --cached .claude/settings.local.json` 済み（status上 `D` 表示）
-2. `.gitignore` に `.claude/settings.local.json` 追加済み
-3. **未完了**: シークレットを含むコミットを修正してプッシュ
-4. **未完了**: 漏洩した旧 npm トークンを revoke して再発行
-
-## プッシュ未完了の理由と次のアクション
-
-`.claude/settings.local.json` にnpmトークンが含まれた状態でコミットしたため、
-GitHub Push Protection にブロックされた。
-
-### 途中まで完了した作業:
-1. `git rm --cached .claude/settings.local.json` 済み
-2. `.gitignore` に `.claude/settings.local.json` を追加済み
-
-### 次回セッションで最初にやること:
-1. `.gitignore` の変更とsettings.local.json除去をコミットし直す
+3. （任意）v0.2.0 の git タグを切る:
    ```bash
-   git add .gitignore
-   git commit --amend  # シークレットを含むコミットを修正
-   git push -u origin main
+   git tag v0.2.0 23bdff8 -m "Release v0.2.0: session lifecycle tracking"
+   git push origin v0.2.0
    ```
-2. プッシュが成功することを確認
-3. npm トークン（漏洩した旧トークン）は npm Web で **revoke して再発行** することを推奨
-
-## v0.1.1 での変更内容
-
-1. **PreSession フック削除** (`src/adapters/claude/generators/hooks.ts`)
-   - `PreSession` は Claude Code の有効なフックイベントではなかった
-   - 代わりに CLAUDE.md の指示でセッション開始時に `ai-guardian context sync` を実行する方式に変更
-
-2. **CLAUDE.md テンプレート更新** (`src/adapters/claude/generators/rules.ts`)
-   - 「セッション開始時に必ず読み込むファイル」→「セッション開始時」に変更
-   - `ai-guardian context sync` 実行の指示を追加
-
-3. **settings.local.json マージ対応** (`src/adapters/claude/index.ts`)
-   - sync 時に settings.local.json を全上書きしていたバグを修正
-   - 既存の permissions 等を保持し、hooks のみ更新するように変更
-
-4. **バージョン** `0.1.0` → `0.1.1`
+   `23bdff8` が v0.2.0 として npm 公開した commit（`3d9a882` は post-release の context 更新）。
 
 ## 完了していること
 
 ### フェーズ1: 初期実装（2026-02-23完了）
-- プロジェクト全体設計（2コンポーネント構成）
-- ai-guardianの機能要件定義
-- ai-conductorとのREST IF仕様
-- 技術スタック決定（Node.js/TypeScript/npm）
-- デーモン管理方針（PID/タイムアウト/通知）
-- 設定継承モデル（グローバル/プロジェクト）
-- 全コアモジュール・コマンド実装
-- ビルド成功・CLI基本動作確認済み
+プロジェクト全体設計、機能要件定義、技術スタック決定、コアモジュール実装。
 
 ### フェーズ2: 設計見直し〜Phase 2c（2026-04-23完了）
-- Claude Code Skills/Hooks/Agents の機能調査
-- LLM非依存コア + LLM別アダプタ方式
-- 基盤層・コア機能・アダプタ層の実装
+LLM非依存コア + LLM別アダプタ方式へ。基盤・コア・アダプタ層実装。
 
-### 応答様態チューニング機能（2026-05-02完了）
-- response-style プロンプト注入機能
+### 応答様態チューニング（2026-05-02完了）
+response-style プロンプト注入機能。
 
-### v0.1.1 バグフィックス（2026-05-07完了）
-- PreSession フック削除・CLAUDE.md指示方式へ変更
+### v0.1.1 リリース（2026-05-07 npm 公開、2026-05-20 GitHub 公開）
+- PreSession フック削除・CLAUDE.md 指示方式へ変更
 - settings.local.json マージ対応
-- npm 公開済み、GitHub プッシュ未完了
+- npm 公開時にトークンを `.claude/settings.local.json` に書いたまま git commit してしまい、
+  GitHub Push Protection でブロック → root commit を amend してシークレット除去後にプッシュ
+- GitHub: `fe5746b`
 
-### v0.2.0 session 機能（2026-05-19ローカル完了）
-- session start/complete/check/status コマンド実装
-- クラッシュ検出 (`*_start` に対応する `*_complete` なし) で警告
-- Claude SessionStart/SessionEnd hook 自動生成
-- CLAUDE.md テンプレ更新
-- 全72テストグリーン、ビルド成功
+### v0.2.0 session 機能リリース（2026-05-26 npm + GitHub 公開）
+- 新コマンド: `ai-guardian session start/complete/check/status`
+- `.ai/.session.log` (JSONL) でセッション/タスクの start/complete を記録
+- `session check`: クラッシュ検出 (`*_start` に対応する `*_complete` 無し) + git status +
+  verify_command 実行 + context sync
+- verify_command 自動検出: `package.json` scripts.build → `Cargo.toml` → `go.mod`
+- Claude アダプタ: SessionStart hook で `session check`、SessionEnd hook で
+  `session complete --type session`
+- CLAUDE.md テンプレ: タスク着手/完了時に `session start --task` / `session complete` を呼ぶ指示
+- `.ai-guardian.yaml` テンプレに `session:` セクション
+- init 実行時にユーザの `.gitignore` へ `.ai/.session.log` を自動追記
+- tests/session.test.ts 13テスト追加、全72テストグリーン
+- GitHub commits: `23bdff8` (実装), `3d9a882` (post-release context update)
 
-## 次にやること
+### トークン漏洩対策（2026-05-26 完了）
+当初 `.claude/settings.local.json` に npm トークン `npm_y7QS...` を平文で書いた状態で
+git commit していたため、念のため全レイヤーで対策実施:
+- GitHub 公開リポジトリ: そもそも到達せず（Push Protection が阻止、漏洩なし）
+- ローカル git 履歴: root commit amend で除去、dangling objects も `gc --prune=now` で完全 purge
+- `~/.npmrc`: 旧トークン削除 → 新トークンで再構成 → publish 後に revoke + ファイル空に
+- npm 側のトークン: 旧 `y7QS` も含めて全て revoke 済み（`npm token list` で 0 件確認済み）
+- 結論: 現時点で有効な publish トークンは存在しない状態。次回 publish は Trusted Publishing で実施予定
 
-### 即時（次回セッション冒頭）
-- GitHub へのプッシュ完了
-- npm トークンの revoke と再発行
+## このセッションで学んだこと / 次回に活かしたい
 
-### Phase 2d: 強化機能の実装（後回し可）
+- トークンを `.claude/settings.local.json` のような **git 管理対象になりうるファイル** に書かないこと
+  - 環境変数 / OS keychain / `~/.npmrc` (gitignore 外) のいずれかにとどめる
+- `~/.npmrc` の自動 token は npm CLI が暗黙的に保存するので、`~/.npmrc` 自体をリポジトリ近傍に置かない
+- 一度コミットしたシークレットは `git commit --amend` でハッシュは変わるが、reflog と dangling object に
+  残る。完全除去には `git reflog expire --expire=now --all && git gc --prune=now --aggressive` が必要
+- npm の publish は 2022 以降デフォルトで 2FA 必須。CLI で `--otp` を渡せない場合は
+  granular access token に **「Allow 2FA bypass on publish」** を必ず ON にする
+- 長期トークンは原理的に漏洩リスクが残る。CI/CD では **Trusted Publishing (OIDC)** を使うのが現代の正解
+
+## Phase 2d 以降の TODO（後回し可）
+
 - hooks の複合トリガー・状態管理の高度化
 - skills のスキルチェーン
 - agents の専門性自動ルーティング・合議アルゴリズム
 - rules のプログラム検証（pattern/command型）・矛盾検出
 - context の compress（LLMによる要約）
-
-### その他
-- Cursor/Copilotアダプタの実装
-- ChatGPT/Gemini アダプタでもセッション開始時指示を統一
+- Cursor / Copilot アダプタの実装
+- ChatGPT / Gemini アダプタでもセッション開始時指示を統一
 
 ## 未解決の問題・判断待ち
 
-- Cursor/Copilot向けアダプタの具体的な生成内容（各ツールの仕様調査が必要）
-- context compressのLLM呼び出し仕様
+- Cursor/Copilot 向けアダプタの具体的な生成内容（各ツールの仕様調査が必要）
+- context compress の LLM 呼び出し仕様
 - agents の合議アルゴリズムの具体的な実装方針
 
 ## チャットに戻す条件
 
-- ai-conductorの設計を詰める必要が生じた場合
-- IF仕様に変更が必要な場合
-- Cursor/Copilot向けアダプタの仕様が不明な場合
+- ai-conductor の設計を詰める必要が生じた場合
+- IF 仕様に変更が必要な場合
+- Cursor/Copilot 向けアダプタの仕様が不明な場合
